@@ -1,7 +1,7 @@
 import json
 import os
 import shutil
-
+from tqdm import tqdm
 from utils import get_file_extension
 
 
@@ -62,12 +62,57 @@ def preview_changes(mapping):
 
     print('--------------------------------------------------\n')
 
-def move_files(mapping, base_path):
+def move_files(mapping, base_path, logger) -> tuple[dict, list]:
+    stats = {"moved": 0, "skipped": 0}
+    moves_log = []
+
     for category, files in mapping.items():
-        for file in files:
+        for file in tqdm(files, desc=f"Moving {category}", unit="file"):
             source = os.path.join(base_path, file)
             destination = os.path.join(base_path, category, file)
             if os.path.exists(destination):
-                print(f"Skipping {file} — already exists in {category}/")
+                tqdm.write(f"Skipping {file} — already exists in {category}/")
+                logger.warning(f"Skipped: {file} — already exists in {category}/")
+                stats["skipped"] += 1
                 continue
             shutil.move(source, destination)
+            logger.info(f"Moved: {file} -> {category}/")
+            stats["moved"] += 1
+            moves_log.append({"source": source, "destination": destination})
+    tqdm.write(f"\nDone! Moved: {stats['moved']} files, Skipped: {stats['skipped']} files.")
+    return stats, moves_log
+
+def save_undo_log(base_path: str, moves_log: list):
+    """Saves move history to a JSON file for undo support."""
+    log_path = os.path.join(base_path, ".undo_log.json")
+    with open(log_path, 'w', encoding='utf-8') as f:
+        json.dump(moves_log, f, indent=2)
+
+def undo_last_organize(base_path: str, logger):
+    """Reverts the last organize operation using the undo log."""
+    log_path = os.path.join(base_path, ".undo_log.json")
+    if not os.path.exists(log_path):
+        print("No undo history found.")
+        return
+
+    with open(log_path, 'r', encoding='utf-8') as f:
+        moves_log = json.load(f)
+
+    undone = 0
+    for entry in moves_log:
+        if os.path.exists(entry["destination"]):
+            shutil.move(entry["destination"], entry["source"])
+            logger.info(f"Undone: {entry['destination']} -> {entry['source']}")
+            undone += 1
+        else:
+            logger.warning(f"Could not undo: {entry['destination']} not found.")
+
+    # წაშალე ცარიელი საქაღალდეები
+    for entry in moves_log:
+        folder = os.path.dirname(entry["destination"])
+        if os.path.isdir(folder) and not os.listdir(folder):
+            os.rmdir(folder)
+
+    os.remove(log_path)
+    print(f"Undo complete! Restored {undone} files.")
+    logger.info(f"Undo complete. Restored {undone} files.")

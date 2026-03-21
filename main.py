@@ -1,5 +1,6 @@
 from utils import *
 from organizer import *
+from logger import setup_logger
 
 def main():
     while True:
@@ -11,15 +12,22 @@ def main():
             files = get_files_in_directory(folder_path)
             config = load_config()
             categorize_type = None
+            log_path = os.path.join(folder_path, "organizer.log")
+            logger = setup_logger(log_path)
+
             while True:
                 print("1. Categorize by default\n"
-                      "2. Categorize by file type\n")
+                      "2. Categorize by file type\n"
+                      "3. Undo last organize\n")
                 choice = input("Enter your choice: ")
                 if choice == "1":
                     categorize_type = '1'
                     break
                 elif choice == "2":
                     categorize_type = '2'
+                    break
+                elif choice == "3":
+                    categorize_type = '3'
                     break
                 else:
                     print("Invalid choice")
@@ -29,6 +37,9 @@ def main():
                 mapping = categorize_files(files, config)
             elif categorize_type == "2":
                 mapping = categorize_by_type(files)
+            elif categorize_type == "3":
+                undo_last_organize(folder_path, logger)
+                break
 
             if not mapping:
                 print("Nothing to organize")
@@ -49,8 +60,8 @@ def main():
 
             if confirm:
                 create_folders(folder_path, mapping)
-                move_files(mapping, folder_path)
-                print("Files organized successfully!")
+                stats, moves_log = move_files(mapping, folder_path, logger)
+                save_undo_log(folder_path, moves_log)
                 break
             else:
                 print("Operation cancelled.")
