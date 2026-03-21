@@ -1,5 +1,6 @@
 {
   "images": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"],
-  "documents": [".pdf", ".docx", ".txt", ".xlsx", ".xls", ".csv"] ,
-  "audio": [".mp3"]
+  "documents": [".pdf", ".docx", ".txt", ".xlsx", ".xls", ".csv", ".pptx", ".ppt", ".md"],
+  "audio": [".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a"],
+  "video": [".mp4", ".mov", ".avi", ".mkv"]
 }

@@ -10,7 +10,26 @@ def main():
             print(f"Loaded: {folder_path}")
             files = get_files_in_directory(folder_path)
             config = load_config()
-            mapping = categorize_files(files, config)
+            categorize_type = None
+            while True:
+                print("1. Categorize by default\n"
+                      "2. Categorize by file type\n")
+                choice = input("Enter your choice: ")
+                if choice == "1":
+                    categorize_type = '1'
+                    break
+                elif choice == "2":
+                    categorize_type = '2'
+                    break
+                else:
+                    print("Invalid choice")
+
+            mapping = None
+            if categorize_type == "1":
+                mapping = categorize_files(files, config)
+            elif categorize_type == "2":
+                mapping = categorize_by_type(files)
+
             if not mapping:
                 print("Nothing to organize")
                 break
@@ -32,6 +51,9 @@ def main():
                 create_folders(folder_path, mapping)
                 move_files(mapping, folder_path)
                 print("Files organized successfully!")
+                break
+            else:
+                print("Operation cancelled.")
                 break
 
 if __name__ == '__main__':
