@@ -11,6 +11,19 @@ def load_config():
     with open(config_path, 'r') as f:
         return json.load(f)
 
+def load_default_config():
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(BASE_DIR, 'config.default.json')
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+def load_user_config():
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(BASE_DIR, 'user_config.json')
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+
 def save_config(config: dict):
     """Saves the updated config back to config.json."""
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -18,6 +31,12 @@ def save_config(config: dict):
     with open(config_path, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=2)
     print("Config saved.")
+
+def save_user_config(config: dict):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(BASE_DIR, 'user_config.json')
+    with open(config_path, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=2)
 
 def categorize_files(files, config):
     categories = {category: [] for category in config}

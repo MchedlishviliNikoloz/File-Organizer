@@ -1,4 +1,4 @@
-from organizer import save_config
+from organizer import save_config, load_config, load_default_config, save_user_config
 
 
 def list_categories(config: dict):
@@ -90,13 +90,18 @@ def remove_extension(config: dict):
 
     return config
 
+def reset_to_default():
+    config = load_default_config()
+    save_config(config)
+
 def manage_categories_menu(config: dict) -> dict:
     while True:
         list_categories(config)
         print("1. Add new category")
         print("2. Add extension to category")
         print("3. Remove extension from category")
-        print("4. Back")
+        print("4. Reset to default configuration")
+        print("5. Back")
         choice = input("Enter your choice: ").strip()
         if choice == "1":
             config = add_category(config)
@@ -108,6 +113,55 @@ def manage_categories_menu(config: dict) -> dict:
             config = remove_extension(config)
             save_config(config)
         elif choice == "4":
+            confirm = input("Are you sure? This will reset all changes in default configuration! (yes/no): ").strip().lower()
+            if confirm == "yes":
+                reset_to_default()
+                config = load_config()
+                print("Configuration reset to default.")
+            else:
+                print("Reset cancelled.")
+        elif choice == "5":
+            break
+        else:
+            print("Invalid choice")
+    return config
+
+def manage_user_config_menu(config: dict) -> dict:
+    while True:
+        if not config:
+            print("\n--- My Configuration (empty) ---\n")
+        else:
+            list_categories(config)
+        print("1. Add new category")
+        print("2. Add extension to category")
+        print("3. Remove extension from category")
+        print("4. Clear all (Start fresh)")
+        print("5. Back")
+        choice = input("Enter your choice: ").strip()
+        if choice == "1":
+            config = add_category(config)
+            save_user_config(config)
+        elif choice == "2":
+            if not config:
+                print("WARNING: No categories yet. Add a category first.")
+            else:
+                config = add_extension(config)
+                save_user_config(config)
+        elif choice == "3":
+            if not config:
+                print("WARNING: No categories yet.")
+            else:
+                config = remove_extension(config)
+                save_user_config(config)
+        elif choice == "4":
+            confirm = input("Are you sure? This will clear your entire configuration! (yes/no): ").strip().lower()
+            if confirm == "yes":
+                config = {}
+                save_user_config(config)
+                print("Configuration cleared.")
+            else:
+                print("Cancelled.")
+        elif choice == "5":
             break
         else:
             print("Invalid choice")
