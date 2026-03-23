@@ -1,6 +1,7 @@
 from utils import *
 from organizer import *
 from logger import setup_logger
+from config_manager import *
 
 def main():
     while True:
@@ -11,14 +12,15 @@ def main():
             print(f"Loaded: {folder_path}")
             files = get_files_in_directory(folder_path)
             config = load_config()
-            categorize_type = None
             log_path = os.path.join(folder_path, "organizer.log")
             logger = setup_logger(log_path)
 
+            categorize_type = None
             while True:
                 print("1. Categorize by default\n"
                       "2. Categorize by file type\n"
-                      "3. Undo last organize\n")
+                      "3. Manage categories\n"
+                      "4. Undo last organize\n")
                 choice = input("Enter your choice: ")
                 if choice == "1":
                     categorize_type = '1'
@@ -27,7 +29,10 @@ def main():
                     categorize_type = '2'
                     break
                 elif choice == "3":
-                    categorize_type = '3'
+                    config = manage_categories_menu(config)
+                    # მენიუს ისევ ვაჩვენებთ შეცვლილი config-ით
+                elif choice == "4":
+                    categorize_type = '4'
                     break
                 else:
                     print("Invalid choice")
@@ -37,7 +42,7 @@ def main():
                 mapping = categorize_files(files, config)
             elif categorize_type == "2":
                 mapping = categorize_by_type(files)
-            elif categorize_type == "3":
+            elif categorize_type == "4":
                 undo_last_organize(folder_path, logger)
                 break
 

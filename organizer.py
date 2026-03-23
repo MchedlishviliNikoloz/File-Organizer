@@ -11,25 +11,26 @@ def load_config():
     with open(config_path, 'r') as f:
         return json.load(f)
 
+def save_config(config: dict):
+    """Saves the updated config back to config.json."""
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(BASE_DIR, 'config.json')
+    with open(config_path, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=2)
+    print("Config saved.")
+
 def categorize_files(files, config):
-    categories = {
-        'documents': [],
-        'images': [],
-        'audio': [],
-        'video': [],
-        'other': []
-    }
+    categories = {category: [] for category in config}
+    categories['other'] = []
     for file in files:
         extension = get_file_extension(file).lower()
-        if extension in config['documents']:
-            categories['documents'].append(file)
-        elif extension in config['images']:
-            categories['images'].append(file)
-        elif extension in config['audio']:
-            categories['audio'].append(file)
-        elif extension in config['video']:
-            categories['video'].append(file)
-        else:
+        matched = False
+        for category, extensions in config.items():
+            if extension in extensions:
+                categories[category].append(file)
+                matched = True
+                break
+        if not matched:
             categories['other'].append(file)
 
     for key in list(categories.keys()):
