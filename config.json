@@ -1,6 +1,8 @@
 {
-  "images": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"],
-  "documents": [".pdf", ".docx", ".txt", ".xlsx", ".xls", ".csv", ".pptx", ".ppt", ".md"],
-  "audio": [".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a"],
-  "video": [".mp4", ".mov", ".avi", ".mkv"]
+  "images": [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".tiff", ".tif", ".ico", ".heic", ".raw"],
+  "documents": [".pdf", ".docx", ".txt", ".xlsx", ".xls", ".csv", ".pptx", ".ppt", ".md", ".doc", ".rtf", ".odt", ".pages", ".epub"],
+  "audio": [".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a", ".wma", ".aiff"],
+  "video": [".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"],
+  "code": [".py", ".js", ".html", ".css", ".ts", ".json", ".xml", ".yaml", ".yml", ".sh", ".cpp", ".c", ".java"],
+  "archives": [".zip", ".rar", ".7z", ".tar", ".gz"]
 }
