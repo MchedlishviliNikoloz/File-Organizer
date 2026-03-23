@@ -13,7 +13,7 @@ def add_category(config: dict):
         print(f"Category '{name}' already exists.")
         return config
     extensions = input("Enter extensions (comma separated, e.g. .txt,.py,.docx): ").strip()
-    ext_list = [e.strip().lower() for e in extensions.split(',')]
+    ext_list = [e.strip().lower() if e.strip().startswith('.') else f".{e.strip().lower()}" for e in extensions.split(',')]
     config[name] = ext_list
     print(f"New category '{name}' added.")
     return config
@@ -33,6 +33,10 @@ def add_extension(config: dict):
         extension = input("Enter extension (e.g. .pdf): ").strip()
         if extension == "exit":
             break
+
+        if extension and extension[0] != '.':
+            extension = f".{extension}"
+
         if extension in config[target_category]:
             print(f"Extension '{extension}' already exists. Type exit to exit or try again.")
         else:
@@ -73,6 +77,10 @@ def remove_extension(config: dict):
         extension = input("Enter extension (e.g. .pdf): ").strip()
         if extension == "exit":
             break
+
+        if extension and extension[0] != '.':
+            extension = f".{extension}"
+
         if extension not in config[category]:
             print(f"Extension '{extension}' does not exists. Type exit to exit or try again.")
         else:
