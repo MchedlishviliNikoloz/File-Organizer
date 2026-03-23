@@ -62,6 +62,7 @@ def main():
                 create_folders(folder_path, mapping)
                 stats, moves_log = move_files(mapping, folder_path, logger)
                 save_undo_log(folder_path, moves_log)
+                save_readme(folder_path)
                 break
             else:
                 print("Operation cancelled.")

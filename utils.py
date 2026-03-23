@@ -1,5 +1,6 @@
 import os
-IGNORED_FILES = {'.DS_Store', 'Thumbs.db', 'desktop.ini'}
+IGNORED_FILES = {'.DS_Store', 'Thumbs.db', 'desktop.ini',
+                 'organizer.log', '.undo_log.json', 'README.txt'}
 
 def validate_path(path: str) -> bool:
     if os.path.isdir(path):
