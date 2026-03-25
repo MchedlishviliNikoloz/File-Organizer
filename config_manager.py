@@ -2,10 +2,29 @@ from organizer import save_config, load_config, load_default_config, save_user_c
 
 
 def list_categories(config: dict):
-    print("\n--- Current Categories ---")
+    print("\n--------------- Current Categories ---------------\n")
+
     for category, extensions in config.items():
-        print(f"  {category}: {', '.join(extensions)}")
-    print("--------------------------\n")
+        print(f"📁 {category} ({len(extensions)} extensions)")
+
+        if not extensions:
+            print("   (no extensions)\n")
+            continue
+
+        line = "   "
+        for ext in extensions:
+            if len(line) + len(ext) + 2 > 60:  # 60 char limit per line
+                print(line)
+                line = "   " + ext
+            else:
+                if line.strip():
+                    line += ", " + ext
+                else:
+                    line += ext
+
+        print(line + "\n")
+
+    print("--------------------------------------------------\n")
 
 def add_category(config: dict):
     name = input("Enter new category name: ").strip().lower()
