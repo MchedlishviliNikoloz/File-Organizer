@@ -21,9 +21,10 @@ def main():
                 print("1. Categorize by default\n"
                       "2. Categorize by file type\n"
                       "3. Categorize by my configuration\n"
-                      "4. Manage categories\n"
-                      "5. Manage my categories\n"
-                      "6. Undo last organize\n")
+                      "4. Find and move duplicates\n"
+                      "5. Manage categories\n"
+                      "6. Manage my categories\n"
+                      "7. Undo last organize\n")
                 choice = input("Enter your choice: ")
                 if choice == "1":
                     categorize_type = '1'
@@ -38,11 +39,14 @@ def main():
                     categorize_type = '3'
                     break
                 elif choice == "4":
-                    config = manage_categories_menu(config)
+                    categorize_type = '4'
+                    break
                 elif choice == "5":
-                    user_config = manage_user_config_menu(user_config)
+                    config = manage_categories_menu(config)
                 elif choice == "6":
-                    categorize_type = '6'
+                    user_config = manage_user_config_menu(user_config)
+                elif choice == "7":
+                    categorize_type = '7'
                     break
                 else:
                     print("Invalid choice")
@@ -54,7 +58,36 @@ def main():
                 mapping = categorize_by_type(files)
             elif categorize_type == "3":
                 mapping = categorize_files(files, user_config)
-            elif categorize_type == "6":
+            elif categorize_type == "4":
+                duplicates = find_duplicates(files, folder_path)
+
+                if not duplicates:
+                    tqdm.write("No duplicates found!")
+                else:
+                    tqdm.write(f"Found {len(duplicates)} group(s) of duplicates.")
+
+                    mapping = duplicates_to_mapping(duplicates)
+                    preview_changes(mapping)
+
+                    confirm = False
+                    while True:
+                        print("1. Confirm\n"
+                              "2. Cancel")
+                        choice = input("Enter your choice: ")
+                        if choice == "1":
+                            confirm = True
+                            break
+                        elif choice == "2":
+                            break
+                        else:
+                            print("Invalid choice")
+
+                    if confirm:
+                        moved, moves_log = move_duplicates(duplicates, folder_path, logger)
+                        save_undo_log(folder_path, moves_log)
+
+                break
+            elif categorize_type == "7":
                 undo_last_organize(folder_path, logger)
                 break
 

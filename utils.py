@@ -1,4 +1,7 @@
 import os
+import hashlib
+
+
 IGNORED_FILES = {'.DS_Store', 'Thumbs.db', 'desktop.ini',
                  'organizer.log', '.undo_log.json', 'README.txt'}
 
@@ -12,3 +15,12 @@ def get_files_in_directory(path: str) -> list:
 
 def get_file_extension(filename: str) -> str:
     return os.path.splitext(filename)[1]
+
+def get_file_hash(filepath: str) -> str:
+    hash_md5 = hashlib.md5()
+
+    with open(filepath, 'rb') as f:
+        for chunk in iter(lambda: f.read(8192), b''):
+            hash_md5.update(chunk)
+
+    return hash_md5.hexdigest()

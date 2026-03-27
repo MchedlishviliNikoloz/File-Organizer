@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 from tqdm import tqdm
-from utils import get_file_extension
+from utils import get_file_extension, get_file_hash
 
 
 def load_config():
@@ -74,6 +74,34 @@ def create_folders(base_path, categories):
     for category in categories:
         os.makedirs(os.path.join(base_path, category), exist_ok=True)
 
+def find_duplicates(files, base_path):
+    hashes = {}
+
+    for file in tqdm(files, desc="Scanning files", unit="file"):
+        filepath = os.path.join(base_path, file)
+        file_hash = get_file_hash(filepath)
+
+        if file_hash not in hashes:
+            hashes[file_hash] = [file]
+        else:
+            hashes[file_hash].append(file)
+
+    found_duplicates = []
+    for group in hashes.values():
+        if len(group) > 1:
+            found_duplicates.append(group)
+
+    tqdm.write("")
+    return found_duplicates
+
+def duplicates_to_mapping(duplicates):
+    mapping = {"duplicates": []}
+
+    for group in duplicates:
+        mapping["duplicates"].extend(group[1:])  # პირველს ვტოვებთ (original)
+
+    return mapping
+
 def preview_changes(mapping):
     print('\n\n--------------- Previewing changes ---------------')
     for category, files in mapping.items():
@@ -101,6 +129,32 @@ def move_files(mapping, base_path, logger) -> tuple[dict, list]:
             moves_log.append({"source": source, "destination": destination})
     tqdm.write(f"\nDone! Moved: {stats['moved']} files, Skipped: {stats['skipped']} files.")
     return stats, moves_log
+
+def move_duplicates(duplicates, base_path, logger):
+    duplicates_folder = os.path.join(base_path, 'duplicates')
+    os.makedirs(duplicates_folder, exist_ok=True)
+
+    moved = 0
+    moves_log = []
+
+    # tqdm აქ!
+    all_duplicates = [file for group in duplicates for file in group[1:]]
+
+    for file in tqdm(all_duplicates, desc="Moving duplicates", unit="file"):
+        source = os.path.join(base_path, file)
+        destination = os.path.join(duplicates_folder, file)
+
+        if os.path.exists(destination):
+            tqdm.write(f"Skipping {file} — already exists in duplicates/")
+            continue
+
+        shutil.move(source, destination)
+        logger.info(f"Moved: {file} -> duplicates/")
+        moved += 1
+        moves_log.append({"source": source, "destination": destination})
+
+    tqdm.write(f"\nDone! Moved {moved} duplicate file(s) to duplicates/")
+    return moved, moves_log
 
 def save_readme(base_path: str):
     """Creates a README file explaining the organizer's generated files."""
