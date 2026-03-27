@@ -38,7 +38,7 @@ def save_user_config(config: dict):
     with open(config_path, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=2)
 
-def categorize_files(files, config):
+def categorize_files(files: list, config: dict) -> dict:
     categories = {category: [] for category in config}
     categories['other'] = []
     for file in files:
@@ -58,7 +58,7 @@ def categorize_files(files, config):
 
     return categories
 
-def categorize_by_type(files):
+def categorize_by_type(files: list) -> dict:
     categories = {}
 
     for file in files:
@@ -70,11 +70,11 @@ def categorize_by_type(files):
 
     return categories
 
-def create_folders(base_path, categories):
+def create_folders(base_path: str, categories: dict) -> None:
     for category in categories:
         os.makedirs(os.path.join(base_path, category), exist_ok=True)
 
-def find_duplicates(files, base_path):
+def find_duplicates(files: list, base_path: str) -> list:
     hashes = {}
 
     for file in tqdm(files, desc="Scanning files", unit="file"):
@@ -130,7 +130,7 @@ def move_files(mapping, base_path, logger) -> tuple[dict, list]:
     tqdm.write(f"\nDone! Moved: {stats['moved']} files, Skipped: {stats['skipped']} files.")
     return stats, moves_log
 
-def move_duplicates(duplicates, base_path, logger):
+def move_duplicates(duplicates: list, base_path: str, logger) -> tuple[int, list]:
     duplicates_folder = os.path.join(base_path, 'duplicates')
     os.makedirs(duplicates_folder, exist_ok=True)
 
@@ -156,7 +156,7 @@ def move_duplicates(duplicates, base_path, logger):
     tqdm.write(f"\nDone! Moved {moved} duplicate file(s) to duplicates/")
     return moved, moves_log
 
-def save_readme(base_path: str):
+def save_readme(base_path: str) -> None:
     """Creates a README file explaining the organizer's generated files."""
     readme_path = os.path.join(base_path, "README.txt")
     content = """FILE ORGANIZER - GENERATED FILES
@@ -179,7 +179,7 @@ and select option 3 (Undo last organize).
     with open(readme_path, 'w', encoding='utf-8') as f:
         f.write(content)
 
-def save_undo_log(base_path: str, moves_log: list):
+def save_undo_log(base_path: str, moves_log: list) -> None:
     """Saves move history to a JSON file for undo support."""
     log_path = os.path.join(base_path, ".undo_log.json")
     with open(log_path, 'w', encoding='utf-8') as f:
