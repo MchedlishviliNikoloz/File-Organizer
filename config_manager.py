@@ -37,6 +37,23 @@ def add_category(config: dict):
     print(f"New category '{name}' added.")
     return config
 
+def remove_category(config: dict):
+    list_categories(config)
+    while True:
+        name = input("Enter category name to remove: ").strip().lower()
+        if name not in config:
+            print("Invalid category, Try again.")
+            continue
+        break
+    choice = input(f"Do you want to remove '{name}' from the category? (yes/no): ").lower()
+    if choice == 'yes':
+        del config[name]
+        print(f"Category '{name}' deleted.")
+        return config
+    else:
+        print("Removing Category cancelled.")
+        return config
+
 def add_extension(config: dict):
     list_categories(config)
     while True:
@@ -118,9 +135,10 @@ def manage_categories_menu(config: dict) -> dict:
         list_categories(config)
         print("1. Add new category")
         print("2. Add extension to category")
-        print("3. Remove extension from category")
-        print("4. Reset to default configuration")
-        print("5. Back")
+        print("3. Remove category from config")
+        print("4. Remove extension from category")
+        print("5. Reset to default configuration")
+        print("6. Back")
         choice = input("Enter your choice: ").strip()
         if choice == "1":
             config = add_category(config)
@@ -129,9 +147,12 @@ def manage_categories_menu(config: dict) -> dict:
             config = add_extension(config)
             save_config(config)
         elif choice == "3":
-            config = remove_extension(config)
+            config = remove_category(config)
             save_config(config)
         elif choice == "4":
+            config = remove_extension(config)
+            save_config(config)
+        elif choice == "5":
             confirm = input("Are you sure? This will reset all changes in default configuration! (yes/no): ").strip().lower()
             if confirm == "yes":
                 reset_to_default()
@@ -139,7 +160,7 @@ def manage_categories_menu(config: dict) -> dict:
                 print("Configuration reset to default.")
             else:
                 print("Reset cancelled.")
-        elif choice == "5":
+        elif choice == "6":
             break
         else:
             print("Invalid choice")
@@ -153,9 +174,10 @@ def manage_user_config_menu(config: dict) -> dict:
             list_categories(config)
         print("1. Add new category")
         print("2. Add extension to category")
-        print("3. Remove extension from category")
-        print("4. Clear all (Start fresh)")
-        print("5. Back")
+        print("3. Remove category from config")
+        print("4. Remove extension from category")
+        print("5. Clear all (Start fresh)")
+        print("6. Back")
         choice = input("Enter your choice: ").strip()
         if choice == "1":
             config = add_category(config)
@@ -168,11 +190,17 @@ def manage_user_config_menu(config: dict) -> dict:
                 save_user_config(config)
         elif choice == "3":
             if not config:
-                print("WARNING: No categories yet.")
+                print("WARNING: No categories yet. Add a category first.")
+            else:
+                config = remove_category(config)
+                save_user_config(config)
+        elif choice == "4":
+            if not config:
+                print("WARNING: No categories yet. Add a category first.")
             else:
                 config = remove_extension(config)
                 save_user_config(config)
-        elif choice == "4":
+        elif choice == "5":
             confirm = input("Are you sure? This will clear your entire configuration! (yes/no): ").strip().lower()
             if confirm == "yes":
                 config = {}
@@ -180,7 +208,7 @@ def manage_user_config_menu(config: dict) -> dict:
                 print("Configuration cleared.")
             else:
                 print("Cancelled.")
-        elif choice == "5":
+        elif choice == "6":
             break
         else:
             print("Invalid choice")
