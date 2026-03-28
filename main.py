@@ -3,6 +3,17 @@ from organizer import *
 from logger import setup_logger
 from config_manager import *
 
+def confirm_action():
+    while True:
+        print("1. Confirm\n2. Cancel")
+        choice = input("Enter your choice: ").strip()
+        if choice == "1":
+            return True
+        elif choice == "2":
+            return False
+        else:
+            print("Invalid choice")
+
 def main():
     while True:
         folder_path = input("Enter folder path: ")
@@ -18,14 +29,14 @@ def main():
 
             categorize_type = None
             while True:
-                print("1. Categorize by default\n"
-                      "2. Categorize by file type\n"
-                      "3. Categorize by my configuration\n"
+                print("1. Organize by default categories\n"
+                      "2. Organize by file type\n"
+                      "3. Organize by my categories\n"
                       "4. Find and move duplicates\n"
-                      "5. Manage categories\n"
+                      "5. Manage default categories\n"
                       "6. Manage my categories\n"
                       "7. Undo last organize\n")
-                choice = input("Enter your choice: ")
+                choice = input("Enter your choice: ").strip()
                 if choice == "1":
                     categorize_type = '1'
                     break
@@ -69,46 +80,25 @@ def main():
                     mapping = duplicates_to_mapping(duplicates)
                     preview_changes(mapping)
 
-                    confirm = False
-                    while True:
-                        print("1. Confirm\n"
-                              "2. Cancel")
-                        choice = input("Enter your choice: ")
-                        if choice == "1":
-                            confirm = True
-                            break
-                        elif choice == "2":
-                            break
-                        else:
-                            print("Invalid choice")
-
-                    if confirm:
+                    if confirm_action():
                         moved, moves_log = move_duplicates(duplicates, folder_path, logger)
                         save_undo_log(folder_path, moves_log)
-
+                    else:
+                        print("Operation cancelled.")
                 break
             elif categorize_type == "7":
                 undo_last_organize(folder_path, logger)
                 break
 
+            if mapping is None:
+                continue
+
             if not mapping:
                 print("Nothing to organize")
                 break
             preview_changes(mapping)
-            confirm = False
-            while True:
-                print("1. Confirm\n"
-                      "2. Cancel")
-                choice = input("Enter your choice: ")
-                if choice == "1":
-                    confirm = True
-                    break
-                elif choice == "2":
-                    break
-                else:
-                    print("Invalid choice")
 
-            if confirm:
+            if confirm_action():
                 create_folders(folder_path, mapping)
                 stats, moves_log = move_files(mapping, folder_path, logger)
                 save_undo_log(folder_path, moves_log)
