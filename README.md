@@ -1,8 +1,9 @@
 # 📁 File Organizer
 
-A simple yet powerful command-line tool to automatically organize files in any folder by type, extension, or custom rules — with support for duplicate detection and undo functionality.
+A simple yet powerful tool to automatically organize files in any folder by type, extension, or custom rules — with support for duplicate detection and undo functionality. Available as both a CLI and a modern GUI application.
 
 🇺🇸 English | 🇬🇪 [ქართული](README.ka.md)
+
 ---
 
 ## ✨ Features
@@ -16,6 +17,7 @@ A simple yet powerful command-line tool to automatically organize files in any f
 - 📊 **Progress bar** — real-time progress while files are being moved
 - 📝 **Logging** — every operation is logged to `organizer.log`
 - 🔄 **Reset to default** — restore the original configuration at any time
+- 🖥️ **Graphical Interface** — modern dark-themed GUI built with customtkinter
 
 ---
 
@@ -23,6 +25,7 @@ A simple yet powerful command-line tool to automatically organize files in any f
 
 - Python 3.10+
 - tqdm
+- customtkinter
 
 ---
 
@@ -36,17 +39,26 @@ cd file-organizer
 
 **2. Install dependencies:**
 ```bash
-pip install tqdm
+pip install tqdm customtkinter
 ```
 
 **3. Run the program:**
+
+Console version:
 ```bash
 python main.py
+```
+
+GUI version:
+```bash
+python gui.py
 ```
 
 ---
 
 ## 📖 Usage
+
+### Console Version
 
 Run the program and enter the path to the folder you want to organize:
 
@@ -61,6 +73,16 @@ Run the program and enter the path to the folder you want to organize:
 6. Manage my categories
 7. Undo last organize
 ```
+
+### GUI Version
+
+Launch `gui.py` to open the graphical interface. The app has three main sections accessible from the sidebar:
+
+- **Dashboard** — select a folder, choose an organize mode, and run operations
+- **Core Config** — view and edit the default category configuration
+- **My Layouts** — create and manage your own personal configuration
+
+---
 
 ### Categorize by default
 
@@ -91,7 +113,8 @@ The program scans files using **MD5 hashing** to detect files with identical con
 ```
 file-organizer/
 │
-├── main.py              # Entry point
+├── main.py              # Console entry point
+├── gui.py               # Graphical user interface
 ├── organizer.py         # Core logic
 ├── config_manager.py    # Category management
 ├── utils.py             # Helper functions
@@ -122,3 +145,4 @@ After organizing a folder, the following files may appear inside it:
 
 - [Python](https://www.python.org/)
 - [tqdm](https://github.com/tqdm/tqdm)
+- [customtkinter](https://github.com/TomSchimansky/CustomTkinter)
