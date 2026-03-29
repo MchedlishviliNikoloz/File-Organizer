@@ -3,6 +3,7 @@ import threading
 import tkinter as tk
 from tkinter import filedialog
 import customtkinter as ctk
+import json
 
 # Import existing logic directly
 import organizer
@@ -14,6 +15,25 @@ from organizer import (
     find_duplicates, duplicates_to_mapping, move_files, move_duplicates,
     save_readme, save_undo_log, undo_last_organize, create_folders
 )
+
+
+# -----------------------------------------------------------
+# Theme Configuration Handlers
+# -----------------------------------------------------------
+def load_theme_config():
+    try:
+        with open("theme_config.json", "r") as f:
+            return json.load(f).get("theme", "dark")
+    except (FileNotFoundError, json.JSONDecodeError):
+        return "dark"
+
+
+def save_theme_config(theme):
+    try:
+        with open("theme_config.json", "w") as f:
+            json.dump({"theme": theme}, f)
+    except Exception:
+        pass
 
 
 # -----------------------------------------------------------
@@ -46,21 +66,28 @@ class GUITqdm:
 organizer.tqdm = GUITqdm
 
 # -----------------------------------------------------------
-# Design System & Theme Constants
+# Design System & Theme Constants (Light, Dark Tuples)
 # -----------------------------------------------------------
-BG_BASE = "#07070D"        # ოდნავ softer black (სუფთა შავი ცოტა მკვდარია)
-BG_SURFACE = "#14141F"     # უფრო smooth surface
-BG_ELEVATED = "#1E1E2A"    # cards / inputs
+BG_BASE = ("#F5F7FB", "#0F1115")
+BG_SURFACE = ("#FFFFFF", "#171A21")
+BG_ELEVATED = ("#EEF1F7", "#1F2430")
 
-ACCENT = "#6366F1"         # იგივე indigo (ძალიან კარგი არჩევანია)
-ACCENT_HOVER = "#5558EC"   # ოდნავ softer hover (ნაკლებად მკვეთრი)
+ACCENT = ("#2563EB", "#2563EB")
+ACCENT_HOVER = ("#1D4ED8", "#1D4ED8")
 
-TEXT_PRIMARY = "#F5F5F7"   # pure white-ის მაგივრად ოდნავ softer
-TEXT_MUTED = "#9CA3AF"     # უკეთესი readability
+TEXT_PRIMARY = ("#0F172A", "#E6E8EB")
+TEXT_MUTED = ("#6B7280", "#9AA0A6")
+BUTTON_TEXT = ("#FFFFFF", "#FFFFFF")
 
-SUCCESS = "#22C55E"        # ცოტა უფრო fresh green
-DANGER = "#EF4444"         # უფრო clean red
-WARNING = "#F59E0B"        # იგივე კარგია
+SUCCESS = ("#16A34A", "#22C55E")
+DANGER = ("#DC2626", "#EF4444")
+WARNING = ("#D97706", "#F59E0B")
+
+# Derived Hover Colors for smooth transitions
+BG_ELEVATED_HOVER = ("#E2E8F0", "#2A2A35")
+SUCCESS_HOVER = ("#15803D", "#059669")
+DANGER_HOVER = ("#E0A6A6", "#451a1a")
+WARNING_HOVER = ("#B45309", "#D97706")
 
 FONT_MAIN = ("Segoe UI Variable Display", 14)
 FONT_HEADING = ("Segoe UI Variable Display", 24, "bold")
@@ -72,23 +99,103 @@ FONT_MONO = ("JetBrains Mono", 12)
 # Custom UI Components
 # -----------------------------------------------------------
 class ToastNotification(ctk.CTkFrame):
+    active_toasts = []
+    SPACING = 15
+    START_Y = 20
+
     def __init__(self, master, message, type="info", duration=3500, **kwargs):
-        super().__init__(master, corner_radius=5, bg_color=BG_BASE, **kwargs)
+        super().__init__(master, corner_radius=12, bg_color="transparent", **kwargs)
 
         colors = {
             "info": (ACCENT, ACCENT_HOVER),
-            "success": (SUCCESS, "#059669"),
-            "warning": (WARNING, "#D97706"),
-            "error": (DANGER, "#E11D48")
+            "success": (SUCCESS, SUCCESS_HOVER),
+            "warning": (WARNING, WARNING_HOVER),
+            "error": (DANGER, DANGER_HOVER)
         }
         bg_color = colors.get(type, colors["info"])[0]
-        self.configure(fg_color=bg_color, border_width=1, border_color="#ffffff")
+        self.configure(fg_color=bg_color, border_width=1, border_color=TEXT_PRIMARY)
 
-        lbl = ctk.CTkLabel(self, text=message, text_color="#ffffff", font=(FONT_MAIN[0], 15, "bold"))
+        lbl = ctk.CTkLabel(self, text=message, text_color=BUTTON_TEXT, font=(FONT_MAIN[0], 15, "bold"))
         lbl.pack(padx=25, pady=15)
 
-        self.place(relx=0.97, rely=0.04, anchor="ne")
-        self.master.after(duration, self.destroy)
+        # Place initially off-screen to calculate dimensions
+        self.place(relx=1.0, x=1000, y=0, anchor="ne")
+        self.update_idletasks()
+        self.width = self.winfo_width()
+        self.height = self.winfo_height()
+
+        # Calculate target Y position for stacking
+        self.target_y = ToastNotification.START_Y
+        if ToastNotification.active_toasts:
+            last_toast = ToastNotification.active_toasts[-1]
+            self.target_y = last_toast.target_y + last_toast.height + ToastNotification.SPACING
+
+        ToastNotification.active_toasts.append(self)
+
+        # Animation state
+        self.current_x = self.width + 50
+        self.target_x = -20
+        self.current_y = self.target_y
+        self.duration = duration
+        self.is_closing = False
+        self.is_animating_y = False
+
+        # Apply initial placement for animation start
+        self.place(relx=1.0, x=self.current_x, y=self.current_y, anchor="ne")
+
+        # Start lifecycle
+        self.animate_in()
+        self.master.after(self.duration, self.start_close)
+
+    def animate_in(self):
+        if self.is_closing: return
+        diff = self.target_x - self.current_x
+        if abs(diff) < 0.5:
+            self.current_x = self.target_x
+            self.place(relx=1.0, x=self.current_x, y=self.current_y, anchor="ne")
+        else:
+            self.current_x += diff * 0.2
+            self.place(relx=1.0, x=self.current_x, y=self.current_y, anchor="ne")
+            self.master.after(16, self.animate_in)
+
+    def start_close(self):
+        if self.is_closing: return
+        self.is_closing = True
+        if self in ToastNotification.active_toasts:
+            ToastNotification.active_toasts.remove(self)
+            ToastNotification.rearrange_toasts()
+        self.animate_out()
+
+    def animate_out(self):
+        target = self.width + 50
+        diff = target - self.current_x
+        if abs(diff) < 0.5:
+            self.destroy()
+        else:
+            self.current_x += diff * 0.2
+            self.place(relx=1.0, x=self.current_x, y=self.current_y, anchor="ne")
+            self.master.after(16, self.animate_out)
+
+    @classmethod
+    def rearrange_toasts(cls):
+        current_y = cls.START_Y
+        for toast in cls.active_toasts:
+            toast.target_y = current_y
+            if not toast.is_animating_y:
+                toast.animate_y()
+            current_y += toast.height + cls.SPACING
+
+    def animate_y(self):
+        self.is_animating_y = True
+        diff = self.target_y - self.current_y
+        if abs(diff) < 0.5:
+            self.current_y = self.target_y
+            self.place(relx=1.0, x=self.current_x, y=self.current_y, anchor="ne")
+            self.is_animating_y = False
+        else:
+            self.current_y += diff * 0.2
+            self.place(relx=1.0, x=self.current_x, y=self.current_y, anchor="ne")
+            self.master.after(16, self.animate_y)
 
 
 class ConfirmDialog(ctk.CTkToplevel):
@@ -112,10 +219,14 @@ class ConfirmDialog(ctk.CTkToplevel):
         btn_frame = ctk.CTkFrame(self, fg_color="transparent")
         btn_frame.pack(fill="x", padx=40)
 
-        ctk.CTkButton(btn_frame, text="CANCEL", height=45, fg_color=BG_ELEVATED, hover_color="#2A2A35",
-                      font=(FONT_MAIN[0], 14, "bold"), command=self.destroy).pack(side="left", expand=True, padx=10)
-        ctk.CTkButton(btn_frame, text="PROCEED", height=45, fg_color=SUCCESS, hover_color="#059669",
-                      font=(FONT_MAIN[0], 14, "bold"), command=self.confirm).pack(side="right", expand=True, padx=10)
+        ctk.CTkButton(btn_frame, text="CANCEL", height=45, fg_color=BG_ELEVATED, hover_color=BG_ELEVATED_HOVER,
+                      text_color=TEXT_PRIMARY, font=(FONT_MAIN[0], 14, "bold"), command=self.destroy).pack(side="left",
+                                                                                                           expand=True,
+                                                                                                           padx=10)
+        ctk.CTkButton(btn_frame, text="PROCEED", height=45, fg_color=SUCCESS, hover_color=SUCCESS_HOVER,
+                      text_color=BUTTON_TEXT, font=(FONT_MAIN[0], 14, "bold"), command=self.confirm).pack(side="right",
+                                                                                                          expand=True,
+                                                                                                          padx=10)
 
     def confirm(self):
         self.on_confirm()
@@ -133,7 +244,8 @@ class FileOrganizerApp(ctk.CTk):
         self.geometry("1100x750")
         self.minsize(1000, 700)
 
-        ctk.set_appearance_mode("dark")
+        self.current_theme = load_theme_config()
+        ctk.set_appearance_mode(self.current_theme)
         self.configure(fg_color=BG_BASE)
 
         self.current_folder = ""
@@ -146,10 +258,11 @@ class FileOrganizerApp(ctk.CTk):
 
         GUITqdm.app_instance = self
         self.setup_ui()
+        self.apply_theme(self.current_theme)
 
     def setup_ui(self):
         self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=0, minsize=280) # WIDER SIDEBAR
+        self.grid_columnconfigure(0, weight=0, minsize=280)
         self.grid_columnconfigure(1, weight=1)
 
         # 1. Sidebar
@@ -160,14 +273,34 @@ class FileOrganizerApp(ctk.CTk):
         # Logo
         logo_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         logo_frame.pack(fill="x", pady=(30, 40), padx=20)
-        """ctk.CTkLabel(logo_frame, text="SMART", font=(FONT_MAIN[0], 28, "bold"), text_color=ACCENT, anchor="w").pack(fill="x")"""
-        ctk.CTkLabel(logo_frame, text="FILE ORGANIZER", font=(FONT_MAIN[0], 21, "bold"), text_color=TEXT_MUTED, anchor="w").pack(fill="x")
+        ctk.CTkLabel(logo_frame, text="FILE ORGANIZER", font=(FONT_MAIN[0], 21, "bold"), text_color=TEXT_MUTED,
+                     anchor="w").pack(fill="x")
 
         # Nav Buttons Mapping
         self.nav_btns = {}
         self.nav_btns["organize"] = self.create_nav_button("     Dashboard", lambda: self.show_frame("organize"))
-        self.nav_btns["default_config"] = self.create_nav_button("     Core Config", lambda: self.show_frame("default_config"))
+        self.nav_btns["default_config"] = self.create_nav_button("     Core Config",
+                                                                 lambda: self.show_frame("default_config"))
         self.nav_btns["user_config"] = self.create_nav_button("     My Layouts", lambda: self.show_frame("user_config"))
+
+        # Theme Switcher (Segmented Control)
+        self.theme_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        self.theme_frame.pack(side="bottom", fill="x", padx=20, pady=30)
+
+        self.switch_frame = ctk.CTkFrame(self.theme_frame, fg_color=BG_ELEVATED, corner_radius=8)
+        self.switch_frame.pack(fill="x")
+
+        self.btn_light = ctk.CTkButton(self.switch_frame, text="Light Mode", height=32,
+                                       font=(FONT_MAIN[0], 12, "bold"), corner_radius=6,
+                                       hover_color=ACCENT_HOVER,
+                                       command=lambda: self.apply_theme("light"))
+        self.btn_light.pack(side="left", expand=True, fill="x", padx=2, pady=2)
+
+        self.btn_dark = ctk.CTkButton(self.switch_frame, text="Dark Mode", height=32,
+                                      font=(FONT_MAIN[0], 12, "bold"), corner_radius=6,
+                                      hover_color=ACCENT_HOVER,
+                                      command=lambda: self.apply_theme("dark"))
+        self.btn_dark.pack(side="right", expand=True, fill="x", padx=2, pady=2)
 
         # 2. Main Container
         self.main_container = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -182,6 +315,21 @@ class FileOrganizerApp(ctk.CTk):
 
         self.show_frame("organize")
 
+    def apply_theme(self, theme_name):
+        self.current_theme = theme_name
+        ctk.set_appearance_mode(theme_name)
+        save_theme_config(theme_name)
+
+        self.configure(fg_color=BG_BASE)
+        self.sidebar.configure(fg_color=BG_SURFACE)
+
+        if theme_name == "light":
+            self.btn_light.configure(fg_color=ACCENT, text_color=BUTTON_TEXT)
+            self.btn_dark.configure(fg_color="transparent", text_color=TEXT_MUTED)
+        else:
+            self.btn_light.configure(fg_color="transparent", text_color=TEXT_MUTED)
+            self.btn_dark.configure(fg_color=ACCENT, text_color=BUTTON_TEXT)
+
     def create_nav_button(self, text, command):
         btn = ctk.CTkButton(self.sidebar, text=text, anchor="w", height=50, fg_color="transparent",
                             text_color=TEXT_MUTED, hover_color=BG_ELEVATED, font=(FONT_MAIN[0], 15, "bold"),
@@ -190,14 +338,12 @@ class FileOrganizerApp(ctk.CTk):
         return btn
 
     def show_frame(self, frame_name):
-        # View Switching
         for name, frame in self.frames.items():
             if name == frame_name:
                 frame.grid(row=0, column=0, sticky="nsew")
             else:
                 frame.grid_remove()
 
-        # Update Sidebar Active State
         for name, btn in self.nav_btns.items():
             if name == frame_name:
                 btn.configure(fg_color=BG_ELEVATED, text_color=TEXT_PRIMARY)
@@ -223,7 +369,8 @@ class FileOrganizerApp(ctk.CTk):
         self.path_entry.pack(side="left", fill="x", expand=True, padx=(20, 10), pady=20)
 
         ctk.CTkButton(path_card, text="BROWSE", height=55, width=120, font=(FONT_MAIN[0], 14, "bold"),
-                      fg_color=ACCENT, hover_color=ACCENT_HOVER, corner_radius=8, command=self.browse_folder).pack(side="right", padx=(0, 20))
+                      text_color=BUTTON_TEXT, fg_color=ACCENT, hover_color=ACCENT_HOVER, corner_radius=8,
+                      command=self.browse_folder).pack(side="right", padx=(0, 20))
 
         # FIXED Action Buttons Grid
         action_card = ctk.CTkFrame(frame, fg_color=BG_SURFACE, corner_radius=16)
@@ -238,17 +385,16 @@ class FileOrganizerApp(ctk.CTk):
             ("Undo System", "undo", BG_ELEVATED)
         ]
 
-        # Ensure all columns have equal weight
         for i in range(len(actions)):
             action_card.grid_columnconfigure(i, weight=1)
 
         for idx, (text, act, color) in enumerate(actions):
-            text_col = TEXT_PRIMARY if act != "undo" else TEXT_MUTED
-            hover = "#2A2A35" if act == "undo" else ACCENT_HOVER
+            text_col = BUTTON_TEXT if color == ACCENT else TEXT_PRIMARY
+            hover = BG_ELEVATED_HOVER if act == "undo" else ACCENT_HOVER
             btn = ctk.CTkButton(action_card, text=text.upper(), height=50, font=btn_font, fg_color=color,
                                 hover_color=hover, text_color=text_col, corner_radius=8,
                                 command=lambda a=act: self.process_action(a))
-            btn.grid(row=0, column=idx, sticky="ew", padx=10, pady=20) # Grid for perfect alignment
+            btn.grid(row=0, column=idx, sticky="ew", padx=10, pady=20)
 
         # Terminal
         term_card = ctk.CTkFrame(frame, fg_color=BG_SURFACE, corner_radius=16)
@@ -256,23 +402,30 @@ class FileOrganizerApp(ctk.CTk):
 
         term_header = ctk.CTkFrame(term_card, fg_color="transparent", height=40)
         term_header.pack(fill="x", padx=20, pady=(15, 0))
-        ctk.CTkLabel(term_header, text="SYSTEM LOG", font=(FONT_MAIN[0], 12, "bold"), text_color=TEXT_MUTED).pack(side="left")
+        ctk.CTkLabel(term_header, text="SYSTEM LOG", font=(FONT_MAIN[0], 12, "bold"), text_color=TEXT_MUTED).pack(
+            side="left")
         self.status_lbl = ctk.CTkLabel(term_header, text="IDLE", font=(FONT_MAIN[0], 12, "bold"), text_color=SUCCESS)
         self.status_lbl.pack(side="right")
 
-        self.log_box = ctk.CTkTextbox(term_card, font=("JetBrains Mono", 13), fg_color=BG_ELEVATED, text_color=TEXT_PRIMARY, border_width=0, corner_radius=8)
+        self.log_box = ctk.CTkTextbox(term_card, font=("JetBrains Mono", 13), fg_color=BG_ELEVATED,
+                                      text_color=TEXT_PRIMARY, border_width=0, corner_radius=8)
         self.log_box.pack(fill="both", expand=True, padx=20, pady=15)
         self.log_box.configure(state="disabled")
 
-        self.progress = ctk.CTkProgressBar(term_card, mode="determinate", height=8, fg_color=BG_ELEVATED, progress_color=ACCENT)
+        self.progress = ctk.CTkProgressBar(term_card, mode="determinate", height=8, fg_color=BG_ELEVATED,
+                                           progress_color=ACCENT)
         self.progress.set(0)
         self.progress.pack(fill="x", padx=20, pady=(0, 20))
 
         self.exec_frame = ctk.CTkFrame(term_card, fg_color="transparent")
-        ctk.CTkButton(self.exec_frame, text="ABORT", height=50, fg_color=BG_ELEVATED, hover_color="#2A2A35",
-                      font=btn_font, command=self.cancel_operation).pack(side="left", expand=True, padx=(20, 10), pady=(0, 20))
-        self.btn_confirm = ctk.CTkButton(self.exec_frame, text="EXECUTE PROTOCOL", height=50, fg_color=SUCCESS, hover_color="#059669",
-                                         font=btn_font, command=self.execute_operation)
+        ctk.CTkButton(self.exec_frame, text="ABORT", height=50, fg_color=BG_ELEVATED, hover_color=BG_ELEVATED_HOVER,
+                      text_color=TEXT_PRIMARY, font=btn_font, command=self.cancel_operation).pack(side="left",
+                                                                                                  expand=True,
+                                                                                                  padx=(20, 10),
+                                                                                                  pady=(0, 20))
+        self.btn_confirm = ctk.CTkButton(self.exec_frame, text="EXECUTE PROTOCOL", height=50, fg_color=SUCCESS,
+                                         hover_color=SUCCESS_HOVER,
+                                         text_color=BUTTON_TEXT, font=btn_font, command=self.execute_operation)
         self.btn_confirm.pack(side="right", expand=True, padx=(10, 20), pady=(0, 20))
 
     def browse_folder(self):
@@ -301,7 +454,7 @@ class FileOrganizerApp(ctk.CTk):
         actions_frame.pack(side="right")
 
         btn_add = ctk.CTkButton(actions_frame, text="+ ADD CATEGORY", height=36, font=(FONT_MAIN[0], 12, "bold"),
-                                fg_color=ACCENT,
+                                fg_color=ACCENT, text_color=BUTTON_TEXT,
                                 hover_color=ACCENT_HOVER, corner_radius=6, command=lambda: self.add_cat_gui(is_user))
         btn_add.pack(side="left", padx=(0, 10))
 
@@ -309,7 +462,7 @@ class FileOrganizerApp(ctk.CTk):
         reset_txt = "PURGE ALL" if is_user else "RESTORE DEFAULTS"
         ctk.CTkButton(actions_frame, text=reset_txt, height=36, font=(FONT_MAIN[0], 12, "bold"), fg_color="transparent",
                       border_color=DANGER, border_width=1,
-                      text_color=DANGER, hover_color="#451a1a", corner_radius=6, command=reset_cmd).pack(side="left")
+                      text_color=DANGER, hover_color=DANGER_HOVER, corner_radius=6, command=reset_cmd).pack(side="left")
 
         # Scrollable container for Category Cards
         scroll_container = ctk.CTkScrollableFrame(frame, fg_color="transparent")
@@ -425,11 +578,8 @@ class FileOrganizerApp(ctk.CTk):
             self.after(0, lambda: ToastNotification(self, f"SYSTEM ERROR", "error"))
 
     def _thread_undo(self):
-        import os
-
         log_path = os.path.join(self.current_folder, ".undo_log.json")
 
-        # UI update (start)
         self.after(0, lambda: self.status_lbl.configure(text="REVERSING...", text_color=WARNING))
 
         if not os.path.exists(log_path):
@@ -437,14 +587,12 @@ class FileOrganizerApp(ctk.CTk):
             self.after(0, lambda: self.status_lbl.configure(text="IDLE", text_color=SUCCESS))
             return
 
-        # 👉 ეს ფუნქცია შესრულდება მხოლოდ CONFIRM-ზე
         def run_undo():
             undo_last_organize(self.current_folder, self.app_logger)
 
             self.after(0, lambda: ToastNotification(self, "Undo completed successfully.", "success"))
             self.after(0, lambda: self.status_lbl.configure(text="IDLE", text_color=SUCCESS))
 
-        # 👉 Dialog უნდა გაეშვას main thread-ზე
         self.after(0, lambda: ConfirmDialog(
             self,
             "Undo Last Operation",
@@ -477,7 +625,6 @@ class FileOrganizerApp(ctk.CTk):
         is_user = frame.is_user
         cfg = self.user_config if is_user else self.config
 
-        # Clear existing cards
         for widget in frame.scroll_container.winfo_children():
             widget.destroy()
 
@@ -489,12 +636,10 @@ class FileOrganizerApp(ctk.CTk):
             return
 
         for category, extensions in cfg.items():
-            # Build individual UI Cards for each category
             card = ctk.CTkFrame(frame.scroll_container, fg_color=BG_SURFACE, border_width=1,
                                 corner_radius=12)
             card.pack(fill="x", pady=(0, 12), padx=4)
 
-            # Card Header (Title, Badge, and Buttons)
             header = ctk.CTkFrame(card, fg_color="transparent", height=40)
             header.pack(fill="x", padx=20, pady=(16, 8))
 
@@ -506,12 +651,13 @@ class FileOrganizerApp(ctk.CTk):
             count_badge.pack(side="left", padx=12, ipadx=8, ipady=2)
 
             btn_del_cat = ctk.CTkButton(header, text="Delete", width=60, height=28, fg_color="transparent",
-                                        text_color=DANGER, hover_color="#451a1a",
+                                        text_color=DANGER, hover_color=DANGER_HOVER,
                                         font=(FONT_MAIN[0], 12, "bold"),
                                         command=lambda c=category: self.request_remove_cat(is_user, c))
             btn_del_cat.pack(side="right", padx=(8, 0))
 
-            btn_rem_ext = ctk.CTkButton(header, text="- Format", width=80, height=28, fg_color="transparent", border_width=1,
+            btn_rem_ext = ctk.CTkButton(header, text="- Format", width=80, height=28, fg_color="transparent",
+                                        border_width=1,
                                         text_color=TEXT_PRIMARY, font=(FONT_MAIN[0], 12, "bold"),
                                         command=lambda c=category: self.remove_ext_gui_direct(is_user, c))
             btn_rem_ext.pack(side="right", padx=4)
@@ -522,7 +668,6 @@ class FileOrganizerApp(ctk.CTk):
                                         command=lambda c=category: self.add_ext_gui_direct(is_user, c))
             btn_add_ext.pack(side="right", padx=4)
 
-            # Card Body (Extensions Preview)
             body = ctk.CTkFrame(card, fg_color="transparent")
             body.pack(fill="x", padx=20, pady=(0, 20))
 
@@ -596,7 +741,6 @@ class FileOrganizerApp(ctk.CTk):
             ToastNotification(self, "NO FORMATS TO REMOVE.", "warning")
             return
 
-        # Shows available extensions directly in the prompt for ease of use
         available = ", ".join(cfg[cat])
         dialog = ctk.CTkInputDialog(text=f"Enter format to remove from {cat.upper()}:\n(Available: {available})",
                                     title="REMOVE FORMAT")

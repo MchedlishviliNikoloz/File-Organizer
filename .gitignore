@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 logs/
 .DS_Store
+theme_config.json
+.idea/
