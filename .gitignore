@@ -4,3 +4,7 @@ logs/
 .DS_Store
 theme_config.json
 .idea/
+build/
+dist/
+*.spec
+builds/
