@@ -20,17 +20,19 @@ from organizer import (
 # -----------------------------------------------------------
 # Theme Configuration Handlers
 # -----------------------------------------------------------
+THEME_CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".file_organizer_theme.json")
+
 def load_theme_config():
     try:
-        with open("theme_config.json", "r") as f:
+        with open(THEME_CONFIG_PATH, "r") as f:
+            print(THEME_CONFIG_PATH)
             return json.load(f).get("theme", "dark")
     except (FileNotFoundError, json.JSONDecodeError):
         return "dark"
 
-
 def save_theme_config(theme):
     try:
-        with open("theme_config.json", "w") as f:
+        with open(THEME_CONFIG_PATH, "w") as f:
             json.dump({"theme": theme}, f)
     except Exception:
         pass
