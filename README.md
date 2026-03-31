@@ -6,6 +6,24 @@ A simple yet powerful tool to automatically organize files in any folder by type
 
 ---
 
+## 📦 Download
+
+Pre-built applications are available for download — no Python installation required:
+
+👉 **[Download latest release](https://github.com/MchedlishviliNikoloz/File-Organizer/releases/latest)**
+
+| Platform | File |
+|----------|------|
+| 🪟 Windows | `FileOrganizer-Windows.zip` |
+| 🍎 Mac | `FileOrganizer-Mac.zip` |
+
+> ⚠️ **Mac users:** If you see "damaged" warning, open Terminal and run:
+> ```
+> xattr -cr "/Applications/File Organizer.app"
+> ```
+
+---
+
 ## ✨ Features
 
 - 📂 **Categorize by default** — organizes files into predefined categories (images, documents, audio, video, code, archives)
@@ -61,7 +79,6 @@ python gui.py
 ### Console Version
 
 Run the program and enter the path to the folder you want to organize:
-
 ```
 📂 Enter folder path: /Users/username/Desktop/MyFolder
 
@@ -109,7 +126,6 @@ The program scans files using **MD5 hashing** to detect files with identical con
 ---
 
 ## 🗂 Project Structure
-
 ```
 file-organizer/
 │
